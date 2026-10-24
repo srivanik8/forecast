@@ -1,0 +1,16 @@
+metric,value
+raw_weekly_obs,2284
+raw_weekly_missing,59
+raw_weekly_pct_missing,2.58
+monthly_obs,526
+monthly_start,1958-03
+monthly_end,2001-12
+months_interpolated,5
+min_ppm,313.4
+max_ppm,373.8
+trend_rise_per_year_first_10y,0.826
+trend_rise_per_year_last_10y,1.522
+seasonal_peak_month,5
+seasonal_trough_month,10
+seasonal_amplitude_ppm,6.066
+residual_std_ppm,0.283
