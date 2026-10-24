@@ -1,131 +1,118 @@
-# Time-Series Forecasting with a Baseline-First Evaluation
+# forecast
 
-A monthly forecasting pipeline that predicts 12 months ahead and — the actual
-point — checks honestly whether the models beat the obvious guess.
+Monthly time-series forecasting built around **honest validation**: does a
+statistical model actually beat a naive baseline, and can its stated confidence
+be trusted?
 
-Most forecasting write-ups stop at "my model got 0.45 MAE". That number means
-nothing on its own. This one starts from the baselines, measures whether the
-prediction intervals are telling the truth, and shows how much accuracy decays
-the further out you look.
+> **Status:** work in progress. Step 1 (load and explore) is done. The other
+> sections below are placeholders. No results are reported until the
+> evaluation behind them exists.
 
----
-
-## The data
-
-Mauna Loa atmospheric CO₂, via `statsmodels.datasets.co2`. Weekly readings from
-March 1958 to December 2001, resampled to monthly means.
-
-- **526** monthly observations
-- **5** missing months, filled by time interpolation
-- Strong upward trend, clean annual season — which is exactly why the baselines
-  need to be good ones
-
-## How it is evaluated
-
-Rolling-origin backtest: **8 origins**, spaced a year apart, forecasting **12
-months** from each. Every model is refit from scratch at every origin. Reusing a
-single fit across origins would leak future data backwards and quietly flatter
-every model on the list.
-
-Four metrics: MAE, RMSE, MAPE, and MASE (scaled against a one-step naive
-forecast on the training window, so 1.00 means "no better than naive").
+| Step | What | Status |
+|---|---|---|
+| 1 | Load and explore | ✅ done |
+| 2 | Baselines (naive, seasonal naive, seasonal naive + drift) | ⏳ |
+| 3 | Models (SARIMA, Holt-Winters) | ⏳ |
+| 4 | Rolling-origin backtest | ⏳ |
+| 5 | Metrics (MAE, RMSE, MAPE, MASE) | ⏳ |
+| 6 | Prediction-interval coverage | ⏳ |
+| 7 | Horizon decay | ⏳ |
+| 8 | Tests and reproducibility | 🟡 data tests only |
+| 9 | README write-up | 🟡 data section only |
 
 ---
+
+## The question
+
+Can a statistical model beat the hardest naive baseline on this series, and
+when it says it is 95% confident, is it right 95% of the time?
+
+## Data
+
+Mauna Loa atmospheric CO₂ (ppm), from `statsmodels.datasets.co2`.
+
+| | |
+|---|---|
+| Raw | 2,284 weekly readings, Mar 1958 – Dec 2001 |
+| Raw gaps | 59 weeks missing (2.58%), last one in Aug 1985 |
+| Modelled | **526 monthly observations**, Mar 1958 – Dec 2001 |
+| Cleaning | weekly → month-start means. 5 months with no readings at all are filled by time interpolation. Edge gaps are dropped, never extrapolated. |
+| Range | 313.4 – 373.8 ppm |
+
+All figures come from `results/data_summary.csv`, written by
+`python -m src.explore`.
+
+![Monthly series](results/figures/series.png)
+
+### What the exploration shows
+
+![Seasonal decomposition](results/figures/decomposition.png)
+
+- **Strong, accelerating trend.** The trend rises on average **0.83 ppm/year**
+  in the first ten years and **1.52 ppm/year** in the last ten. The growth rate
+  roughly doubles over the period, so a straight-line drift is a
+  simplification.
+- **Clean, stable annual seasonality.** It peaks in **May** and bottoms out in
+  **October**, with a peak-to-trough amplitude of about **6.1 ppm**. The shape
+  barely changes over 44 years, so additive seasonality looks appropriate.
+- **Small residuals.** After removing trend and season, the residual standard
+  deviation is **0.28 ppm**. Most of the series can be explained by structure.
+
+![Seasonal profile](results/figures/seasonal_profile.png)
+
+**What this means for later steps.** With a trend this strong, the plain naive
+forecast ("last value carried forward") will be weak. With a seasonal pattern
+this regular, seasonal naive plus drift will probably be the hard baseline to
+beat. That is a hypothesis for Step 2, not a result yet.
+
+> The decomposition above uses the full series and is for exploration only.
+> Nothing computed on the full series is ever passed to a model. Every fit will
+> use only its own training window.
+
+## Method
+
+_To do: baselines, models, rolling-origin design, metrics._
 
 ## Results
 
-Mean error across all 8 origins, 12-month horizon each:
+_To do: MASE against the hardest baseline, interval coverage, horizon decay._
 
-| Model | MAE (ppm) | RMSE | MAPE | MASE | vs seasonal naive |
-|---|---|---|---|---|---|
-| **SARIMA(1,1,1)(1,1,1,12)** | **0.447** | 0.519 | 0.12% | 0.427 | **0.258** |
-| Holt-Winters (additive) | 0.482 | 0.552 | 0.13% | 0.461 | 0.278 |
-| Seasonal naive + drift | 0.658 | 0.742 | 0.18% | 0.629 | 0.380 |
-| Seasonal naive | 1.732 | 1.788 | 0.47% | 1.655 | 1.000 |
-| Naive (last value) | 2.129 | 2.534 | 0.58% | 2.035 | 1.230 |
+## What I found
 
-![Model comparison](results/model_comparison.png)
+_To do._
 
-SARIMA cuts the seasonal-naive error by roughly three quarters. Worth noting how
-close **seasonal naive + drift** gets for a model that is four lines of
-arithmetic and has no parameters to fit.
+## Limitations
 
-### The forecast against reality
+- Filling missing months with time interpolation uses the readings on both
+  sides of the gap. That matters for 5 of 526 months, all in 1958 or 1964 (including a three-month gap, Feb–Apr 1964),
+  but it is technically information from the future.
+- _More to come as the evaluation is built._
 
-![Forecast vs actual](results/forecast_vs_actual.png)
-
-### Do the 95% intervals actually contain the truth?
-
-| Nominal | Empirical | Mean width | Intervals checked |
-|---|---|---|---|
-| 95% | **92.7%** | 1.91 ppm | 96 |
-
-They do not, quite. The bands are slightly too narrow — the model is a little
-more confident than its track record justifies. That is a small gap, but it is
-the kind of thing that goes unmeasured almost everywhere.
-
-### Accuracy decays with distance
-
-| Months ahead | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| MAE (ppm) | 0.248 | 0.317 | 0.396 | 0.364 | 0.385 | 0.458 | 0.574 | 0.502 | 0.575 | 0.492 | 0.497 | 0.557 |
-
-![Error by horizon](results/error_by_horizon.png)
-
-A 12-month forecast is about **2.2×** as wrong as a 1-month one. A single
-headline accuracy figure hides that completely.
-
----
-
-## What this project is actually demonstrating
-
-**1. Baselines first, and the right baselines.**
-Plain last-value naive scores a MASE of 2.04 — worse than doing nothing
-seasonal at all. Pick that as your reference and every model looks like a
-triumph. The honest comparison is against seasonal naive, and the genuinely
-hard one is against seasonal naive + drift.
-
-**2. Coverage measured, not assumed.**
-Almost nobody checks whether their 95% intervals contain the truth 95% of the
-time. Finding out they contain it 92.7% of the time, and saying so, matters more
-than shaving another 0.01 off the MAE.
-
-**3. Error growth quantified.**
-Reporting one accuracy number for a 12-month forecast averages away the fact
-that month 12 is twice as uncertain as month 1. Anyone planning against that
-forecast needs to know it.
-
----
-
-## Layout
-
-```
-.
-├── README.md
-├── requirements.txt
-├── src/
-│   ├── forecast.py      # data, models, metrics, backtest, coverage
-│   └── plots.py         # the three figures
-└── results/             # csvs and pngs, all generated
-```
-
-`load_series()` in `src/forecast.py` is the only function you touch to swap
-datasets. It returns a monthly series with a clean index; everything downstream
-is dataset-agnostic.
-
-## Running it
+## How to run it
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python src/forecast.py
-python src/plots.py
+
+python -m src.explore            # step 1: summary + figures into results/
+python -m pytest                 # tests
 ```
 
-Roughly 15 seconds for the backtest. Every number quoted in this README is read
-from the generated CSVs — nothing here is typed by hand.
+## Repo layout
 
-## Next
-
-Re-point `load_series()` at real operational data (SEAI or EirGrid grid
-demand). The mess in live operational series — outages, revisions, holiday
-effects — surfaces failure modes that a clean atmospheric record never will.
+```
+forecast/
+├── README.md
+├── requirements.txt
+├── data/                 # notes on data sources (co2 ships with statsmodels)
+├── src/
+│   ├── data.py           # loading, missing-value report, monthly resampling
+│   ├── plots.py          # figures
+│   └── explore.py        # step 1 entry point
+├── tests/
+│   └── test_data.py
+└── results/
+    ├── data_summary.csv
+    └── figures/
+```
