@@ -1,5 +1,8 @@
-pandas>=2.0
-numpy>=1.24
-statsmodels>=0.14
-matplotlib>=3.7
-scipy>=1.10
+# pinned so a clean clone reproduces the same numbers
+pandas==3.1.0
+numpy==2.5.4
+statsmodels==0.15.0
+scipy==1.18.1
+scikit-learn==1.9.1
+matplotlib==3.11.2
+pytest==9.1.1
