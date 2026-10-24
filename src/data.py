@@ -26,3 +26,24 @@ def missing_report(series):
         "first_missing": gaps.index.min() if gaps.size else None,
         "last_missing": gaps.index.max() if gaps.size else None,
     }
+
+
+def to_monthly(series):
+    """
+    weekly -> monthly means, then bridge any months that had no readings.
+
+    only interior gaps are filled (linear in time). leading or trailing gaps
+    are dropped rather than extrapolated, since there is nothing either side
+    to bridge from.
+    """
+    monthly = series.resample("MS").mean()
+    monthly = monthly.interpolate(method="time", limit_area="inside")
+    monthly = monthly.dropna()
+    monthly = monthly.asfreq("MS")
+    monthly.name = series.name
+    return monthly
+
+
+def load_series():
+    """the clean monthly series every later step uses."""
+    return to_monthly(load_raw())
