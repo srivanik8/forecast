@@ -60,3 +60,17 @@ def plot_seasonal_profile(seasonal, path):
     ax.set_title("Average seasonal effect by month")
     ax.grid(axis="y", alpha=0.3)
     return _save(fig, path)
+
+
+def plot_baseline_forecasts(history, actual, forecasts, path, ylabel="CO₂ (ppm)"):
+    """each baseline's forecast against what actually happened."""
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.plot(history.index, history.values, lw=1, color="grey", label="training data")
+    ax.plot(actual.index, actual.values, lw=1.5, color="black", label="actual")
+    for name, f in forecasts.items():
+        ax.plot(f.index, f.values, lw=1.2, ls="--", label=name.replace("_", " "))
+    ax.set_title(f"Baseline forecasts from {actual.index[0]:%b %Y}")
+    ax.set_ylabel(ylabel)
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
+    return _save(fig, path)

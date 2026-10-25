@@ -1,0 +1,4 @@
+baseline,mean_mae,worst_mae
+seasonal_naive_drift,0.659,1.671
+seasonal_naive,1.732,2.914
+naive,2.129,2.418
