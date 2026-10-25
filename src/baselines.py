@@ -18,3 +18,10 @@ def _future_index(train, horizon):
 def naive(train, horizon):
     """every future month equals the last observed month."""
     return pd.Series(float(train.iloc[-1]), index=_future_index(train, horizon), name="naive")
+
+
+def seasonal_naive(train, horizon, season=SEASON):
+    """each future month equals the same month in the last observed year."""
+    last_year = train.iloc[-season:].to_numpy()
+    values = [last_year[h % season] for h in range(horizon)]
+    return pd.Series(values, index=_future_index(train, horizon), name="seasonal_naive")
