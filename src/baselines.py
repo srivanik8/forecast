@@ -25,3 +25,24 @@ def seasonal_naive(train, horizon, season=SEASON):
     last_year = train.iloc[-season:].to_numpy()
     values = [last_year[h % season] for h in range(horizon)]
     return pd.Series(values, index=_future_index(train, horizon), name="seasonal_naive")
+
+
+def seasonal_naive_drift(train, horizon, season=SEASON):
+    """
+    seasonal naive plus the average year-on-year change in the training window.
+
+    a forecast k years past the last observed season gets k years of drift.
+    """
+    drift = float(train.diff(season).mean())
+    base = seasonal_naive(train, horizon, season)
+    years_ahead = [h // season + 1 for h in range(horizon)]
+    out = base + drift * pd.Series(years_ahead, index=base.index)
+    out.name = "seasonal_naive_drift"
+    return out
+
+
+BASELINES = {
+    "naive": naive,
+    "seasonal_naive": seasonal_naive,
+    "seasonal_naive_drift": seasonal_naive_drift,
+}
