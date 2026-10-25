@@ -21,6 +21,23 @@ no readings are filled by time interpolation.
   October (about 6.1 ppm peak to trough).
 - **Residuals:** small (std 0.28 ppm).
 
+## Baselines
+
+Three naive forecasts, each predicting 12 months ahead from 8 yearly cut
+points (1994–2001), using only data before each cut point:
+
+| Baseline | Mean MAE (ppm) | Worst MAE (ppm) |
+|---|---|---|
+| Seasonal naive + drift | **0.659** | 1.671 |
+| Seasonal naive | 1.732 | 2.914 |
+| Naive (last value) | 2.129 | 2.418 |
+
+![Baseline forecasts](results/figures/baseline_forecasts.png)
+
+**Seasonal naive + drift is the benchmark.** Its error is about a third of the
+plain seasonal naive's error. Comparing models against seasonal naive would
+make any of them look far better than it really is.
+
 ## How to run it
 
 ```bash
@@ -28,6 +45,7 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-python -m src.explore            # summary + figures into results/
+python -m src.explore            # step 1: summary + figures
+python -m src.compare_baselines  # step 2: baseline comparison
 python -m pytest                 # tests
 ```
