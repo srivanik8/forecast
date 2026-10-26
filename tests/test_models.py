@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.models import MODELS
+from src.models import FITTERS, MODELS, diagnostics
 
 
 def synthetic(n=120, seed=0):
@@ -46,3 +46,12 @@ def test_forecast_ignores_data_after_training(name):
     a = MODELS[name](SERIES.iloc[:-12], 12)
     b = MODELS[name](wrecked.iloc[:-12], 12)
     pd.testing.assert_frame_equal(a, b)
+
+
+@pytest.mark.parametrize("name", list(FITTERS))
+def test_diagnostics_report_expected_fields(name):
+    d = diagnostics(FITTERS[name](TRAIN))
+    assert set(d) == {"aic", "resid_std", "ljung_box_p"}
+    assert 0 <= d["ljung_box_p"] <= 1
+    #noise was generated with std 0.2, residuals should be close to that
+    assert d["resid_std"] < 0.5
