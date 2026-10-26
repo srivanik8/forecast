@@ -74,3 +74,21 @@ def plot_baseline_forecasts(history, actual, forecasts, path, ylabel="CO₂ (ppm
     ax.legend(fontsize=8)
     ax.grid(alpha=0.3)
     return _save(fig, path)
+
+
+def plot_model_forecasts(history, actual, forecasts, path, ylabel="CO₂ (ppm)"):
+    """one panel per model: forecast, 95% interval, and what actually happened."""
+    fig, axes = plt.subplots(1, len(forecasts), figsize=(5 * len(forecasts), 3.8),
+                             sharey=True, squeeze=False)
+    for ax, (name, f) in zip(axes[0], forecasts.items()):
+        ax.plot(history.index, history.values, lw=1, color="grey", label="training data")
+        ax.fill_between(f.index, f["lower"], f["upper"], color="#1f4e79", alpha=0.2,
+                        label="95% interval")
+        ax.plot(f.index, f["mean"], lw=1.2, ls="--", color="#1f4e79", label="forecast")
+        ax.plot(actual.index, actual.values, lw=1.5, color="black", label="actual")
+        ax.set_title(name.replace("_", " ").title().replace("Sarima", "SARIMA"))
+        ax.grid(alpha=0.3)
+        ax.tick_params(axis="x", labelrotation=30)
+    axes[0][0].set_ylabel(ylabel)
+    axes[0][0].legend(fontsize=8, loc="upper left")
+    return _save(fig, path)
