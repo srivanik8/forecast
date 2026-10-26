@@ -38,6 +38,29 @@ points (1994–2001), using only data before each cut point:
 plain seasonal naive's error. Comparing models against seasonal naive would
 make any of them look far better than it really is.
 
+## Models
+
+- **SARIMA(1,1,1)(1,1,1,12)**
+- **Holt-Winters**, additive trend and season, fitted as ETS(A,A,A) to get
+  prediction intervals
+
+Both models refit from scratch on whatever training window they are given and
+return 95% prediction intervals. As a sanity check, each one is fitted on data
+up to Dec 2000 and forecasts 2001:
+
+| Model | Residual std (ppm) | Ljung-Box p | 2001 MAE (ppm) |
+|---|---|---|---|
+| SARIMA | 0.313 | 0.564 | 0.265 |
+| Holt-Winters | 0.300 | 0.256 | 0.222 |
+| Seasonal naive + drift | – | – | 0.242 |
+
+![Model forecasts](results/figures/model_forecasts.png)
+
+Both models leave no significant pattern in their residuals (Ljung-Box
+p > 0.05). On this single year, SARIMA does slightly *worse* than the drift
+baseline. One split proves little either way, so the comparison that counts
+is the rolling-origin backtest.
+
 ## How to run it
 
 ```bash
@@ -47,5 +70,6 @@ pip install -r requirements.txt
 
 python -m src.explore            # step 1: summary + figures
 python -m src.compare_baselines  # step 2: baseline comparison
+python -m src.fit_models         # step 3: model fit + diagnostics
 python -m pytest                 # tests
 ```
