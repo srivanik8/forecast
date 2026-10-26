@@ -8,6 +8,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 DPI = 130
+TITLES = {"sarima": "SARIMA(1,1,1)(1,1,1,12)", "holt_winters": "Holt-Winters (additive)"}
 
 
 def _save(fig, path):
@@ -86,7 +87,7 @@ def plot_model_forecasts(history, actual, forecasts, path, ylabel="CO₂ (ppm)")
                         label="95% interval")
         ax.plot(f.index, f["mean"], lw=1.2, ls="--", color="#1f4e79", label="forecast")
         ax.plot(actual.index, actual.values, lw=1.5, color="black", label="actual")
-        ax.set_title(name.replace("_", " ").title().replace("Sarima", "SARIMA"))
+        ax.set_title(TITLES.get(name, name))
         ax.grid(alpha=0.3)
         ax.tick_params(axis="x", labelrotation=30)
     axes[0][0].set_ylabel(ylabel)

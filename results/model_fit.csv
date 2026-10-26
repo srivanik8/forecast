@@ -1,0 +1,4 @@
+model,aic,resid_std,ljung_box_p,holdout_mae
+sarima,255.6,0.313,0.564,0.265
+holt_winters,281.9,0.3,0.256,0.222
+seasonal_naive_drift,,,,0.242
