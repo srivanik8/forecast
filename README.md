@@ -61,6 +61,33 @@ p > 0.05). On this single year, SARIMA does slightly *worse* than the drift
 baseline. One split proves little either way, so the comparison that counts
 is the rolling-origin backtest.
 
+## Backtest
+
+8 origins a year apart (forecasting 1994 through 2001), 12 months ahead from
+each. Every forecaster is refit from scratch at every origin on data before
+that origin only. That gives 96 forecasts per forecaster, all saved in
+`results/backtest.csv`.
+
+MAE (ppm) of each 12-month forecast:
+
+| Forecaster | 1994 | 1995 | 1996 | 1997 | 1998 | 1999 | 2000 | 2001 | Mean |
+|---|---|---|---|---|---|---|---|---|---|
+| SARIMA | 0.552 | 0.286 | 0.239 | 0.427 | 1.077 | 0.538 | 0.277 | 0.265 | **0.458** |
+| Holt-Winters | 0.599 | 0.333 | 0.413 | 0.301 | 1.185 | 0.427 | 0.211 | 0.222 | **0.461** |
+| Seasonal naive + drift | 0.668 | 0.759 | 0.527 | 0.389 | 1.671 | 0.626 | 0.386 | 0.242 | 0.659 |
+| Seasonal naive | 1.862 | 1.971 | 1.760 | 1.109 | 2.914 | 1.611 | 1.136 | 1.493 | 1.732 |
+| Naive | 2.353 | 2.150 | 2.288 | 1.967 | 2.418 | 2.056 | 1.883 | 1.919 | 2.129 |
+
+![Backtest](results/figures/backtest.png)
+
+- Both models beat the drift baseline on average, by about 30%.
+- Holt-Winters beats it in all 8 years. SARIMA beats it in 6 of 8: it loses
+  in 1997 and 2001, the year the single split in Step 3 happened to pick.
+- 1998 is the hardest year for every forecaster. CO₂ rose faster than any of
+  them expected.
+- The two models are close: SARIMA has the lower mean, but Holt-Winters wins
+  in 4 of the 8 years.
+
 ## How to run it
 
 ```bash
@@ -71,5 +98,6 @@ pip install -r requirements.txt
 python -m src.explore            # step 1: summary + figures
 python -m src.compare_baselines  # step 2: baseline comparison
 python -m src.fit_models         # step 3: model fit + diagnostics
+python -m src.run_backtest       # step 4: rolling-origin backtest
 python -m pytest                 # tests
 ```
