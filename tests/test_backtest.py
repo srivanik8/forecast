@@ -42,10 +42,48 @@ def test_training_never_reaches_the_forecast_window():
 
 
 def test_changing_the_future_does_not_change_earlier_forecasts():
+    #wreck the last two years: only the final origin trains on any of them
     wrecked = SERIES.copy()
-    wrecked.iloc[-12:] = 1e6
+    wrecked.iloc[-24:] = 1e6
     a = run(SERIES, BASELINES)
     b = run(wrecked, BASELINES)
-    #every origin but the last forecasts before the wrecked year
-    earlier = a["origin"] < SERIES.index[-12]
+    earlier = a["origin"] < SERIES.index[-24]
+    last = a["origin"] == SERIES.index[-12]
     pd.testing.assert_series_equal(a.loc[earlier, "forecast"], b.loc[earlier, "forecast"])
+    #sanity check that the test can fail: the final origin did see the change
+    assert not np.allclose(a.loc[last, "forecast"], b.loc[last, "forecast"])
+
+
+def test_one_row_per_model_origin_and_month_ahead():
+    out = run(SERIES, BASELINES)
+    assert len(out) == len(BASELINES) * 8 * 12
+    assert sorted(out["horizon"].unique()) == list(range(1, 13))
+    assert out.groupby(["model", "origin"]).size().eq(12).all()
+
+
+def test_rows_record_actual_and_error_correctly():
+    out = run(SERIES, BASELINES)
+    assert np.allclose(out["actual"], SERIES.loc[out["date"]].to_numpy())
+    assert np.allclose(out["error"], out["actual"] - out["forecast"])
+    #naive on a straight line misses by exactly h steps of slope
+    naive = out[out["model"] == "naive"]
+    assert np.allclose(naive["error"], naive["horizon"])
+
+
+def test_baselines_have_no_interval_and_models_keep_theirs():
+    def with_interval(train, horizon):
+        f = BASELINES["naive"](train, horizon)
+        return pd.DataFrame({"mean": f, "lower": f - 1, "upper": f + 1})
+
+    out = run(SERIES, {"naive": BASELINES["naive"], "banded": with_interval})
+    assert out.loc[out["model"] == "naive", ["lower", "upper"]].isna().all().all()
+    banded = out[out["model"] == "banded"]
+    assert np.allclose(banded["upper"] - banded["lower"], 2.0)
+
+
+def test_mismatched_forecast_dates_are_rejected():
+    def wrong_dates(train, horizon):
+        return BASELINES["naive"](train.iloc[:-1], horizon)
+
+    with pytest.raises(ValueError):
+        run(SERIES, {"wrong": wrong_dates})
