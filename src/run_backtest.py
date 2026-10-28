@@ -17,9 +17,11 @@ from src.baselines import BASELINES
 from src.data import load_series
 from src.metrics import mae
 from src.models import MODELS
+from src.plots import plot_backtest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULTS = os.path.join(ROOT, "results")
+FIGURES = os.path.join(RESULTS, "figures")
 
 FORECASTERS = {**BASELINES, **MODELS}
 
@@ -41,6 +43,9 @@ def main():
     by_origin["mean"] = by_origin.mean(axis=1).round(3)
     by_origin = by_origin.sort_values("mean")
     by_origin.to_csv(os.path.join(RESULTS, "backtest_mae_by_origin.csv"))
+
+    plot_backtest(series, out, by_origin, ["sarima", "holt_winters", "seasonal_naive_drift"],
+                  os.path.join(FIGURES, "backtest.png"))
 
     n_origins = out["origin"].nunique()
     print(f"{len(out)} forecasts from {n_origins} origins in {time.time() - start:.0f}s\n")

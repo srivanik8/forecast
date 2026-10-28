@@ -6,9 +6,11 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+import pandas as pd  # noqa: E402
 
 DPI = 130
-TITLES = {"sarima": "SARIMA(1,1,1)(1,1,1,12)", "holt_winters": "Holt-Winters (additive)"}
+TITLES = {"sarima": "SARIMA(1,1,1)(1,1,1,12)", "holt_winters": "Holt-Winters (additive)",
+          "seasonal_naive_drift": "seasonal naive + drift"}
 
 
 def _save(fig, path):
@@ -92,4 +94,41 @@ def plot_model_forecasts(history, actual, forecasts, path, ylabel="CO₂ (ppm)")
         ax.tick_params(axis="x", labelrotation=30)
     axes[0][0].set_ylabel(ylabel)
     axes[0][0].legend(fontsize=8, loc="upper left")
+    return _save(fig, path)
+
+
+def plot_backtest(series, backtest, by_origin, models, path, ylabel="CO₂ (ppm)"):
+    """
+    top: every origin's 12-month forecast against the actual series.
+    bottom: mae of each forecast window, per origin.
+    """
+    colours = ["#1f4e79", "#c55a11", "#548235", "#7f6000", "#7030a0"]
+    fig, (top, bottom) = plt.subplots(2, 1, figsize=(11, 7.5),
+                                      gridspec_kw={"height_ratios": [3, 2]})
+    #show the year before the first origin for context
+    shown = series[series.index >= backtest["train_end"].min() - pd.DateOffset(months=11)]
+    top.plot(shown.index, shown.values, lw=1.5, color="black", label="actual")
+    for colour, name in zip(colours, models):
+        rows = backtest[backtest["model"] == name]
+        for i, (_, window) in enumerate(rows.groupby("origin")):
+            top.plot(window["date"], window["forecast"], lw=1, ls="--", color=colour,
+                     label=TITLES.get(name, name.replace("_", " ")) if i == 0 else None)
+    for origin in backtest["origin"].unique():
+        top.axvline(origin, color="grey", lw=0.5, alpha=0.5)
+    top.set_ylabel(ylabel)
+    top.set_title("Rolling-origin backtest: 12-month forecasts from each origin")
+    top.legend(fontsize=8, loc="upper left")
+    top.grid(alpha=0.3)
+
+    years = [c for c in by_origin.columns if c != "mean"]
+    width = 0.8 / len(models)
+    for k, (colour, name) in enumerate(zip(colours, models)):
+        xs = [i + (k - (len(models) - 1) / 2) * width for i in range(len(years))]
+        bottom.bar(xs, by_origin.loc[name, years], width=width, color=colour,
+                   label=TITLES.get(name, name.replace("_", " ")))
+    bottom.set_xticks(range(len(years)), years)
+    bottom.set_ylabel("MAE (ppm)")
+    bottom.set_xlabel("Year forecast")
+    bottom.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
     return _save(fig, path)
