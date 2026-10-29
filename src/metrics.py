@@ -20,3 +20,16 @@ def rmse(actual, pred):
     """root mean squared error. squaring punishes large misses harder than mae."""
     actual, pred = _arrays(actual, pred)
     return float(np.sqrt(np.mean((actual - pred) ** 2)))
+
+
+def mape(actual, pred):
+    """
+    mean absolute percentage error, as a percentage.
+
+    easy to communicate, but it divides by the actual value, so it breaks
+    down near zero. refuse rather than return a meaningless number.
+    """
+    actual, pred = _arrays(actual, pred)
+    if np.any(np.isclose(actual, 0.0)):
+        raise ValueError("mape is undefined when an actual value is zero")
+    return float(np.mean(np.abs((actual - pred) / actual)) * 100)

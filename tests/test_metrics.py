@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.metrics import mae, rmse
+from src.metrics import mae, mape, rmse
 
 
 def test_mae_on_known_example():
@@ -27,3 +27,13 @@ def test_rmse_punishes_one_big_miss_more_than_mae():
     spread, spike = [1, 1, 1, 1], [0, 0, 0, 4]
     assert mae(actual, spread) == mae(actual, spike)
     assert rmse(actual, spike) > rmse(actual, spread)
+
+
+def test_mape_on_known_example():
+    #10% and 5% off -> 7.5%
+    assert mape([100, 200], [110, 190]) == pytest.approx(7.5)
+
+
+def test_mape_refuses_zero_actuals():
+    with pytest.raises(ValueError):
+        mape([0, 1], [1, 1])
