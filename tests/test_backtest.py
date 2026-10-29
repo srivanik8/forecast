@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.backtest import origins, run, score
+from src.backtest import origins, run, score, summarise
 from src.baselines import BASELINES
 
 
@@ -103,10 +103,35 @@ def test_score_scales_mase_on_each_origin_training_window_only():
     assert np.allclose(naive["mae"], 6.5)
     assert np.allclose(naive["mase"], 6.5)
 
-    #make the series jumpy only after the last origin: no mase may change
+    #make the last two years jumpy: only the final origin trains on them
     jumpy = SERIES.copy()
-    jumpy.iloc[-12:] += np.tile([0, 50], 6)
+    jumpy.iloc[-24:] += np.tile([0, 50], 12)
     a = score(run(SERIES, BASELINES), SERIES)
     b = score(run(jumpy, BASELINES), jumpy)
-    earlier = a["origin"] < SERIES.index[-12]
+    earlier = a["origin"] < SERIES.index[-24]
+    last = a["origin"] == SERIES.index[-12]
     assert np.allclose(a.loc[earlier, "mase"], b.loc[earlier, "mase"])
+    assert not np.allclose(a.loc[last, "mase"], b.loc[last, "mase"])
+
+
+def test_summarise_compares_against_the_reference():
+    scores = pd.DataFrame({
+        "model": ["ref", "ref", "good", "good"],
+        "origin": [1, 2, 1, 2],
+        "mae": [2.0, 4.0, 1.0, 5.0],
+        "rmse": 0.0, "mape": 0.0, "mase": [1.0, 2.0, 0.5, 2.5],
+    })
+    out = summarise(scores, reference="ref")
+    #relative mae per origin: 0.5 and 1.25 -> mean 0.875, beats ref once
+    assert out.loc["good", "rel_mae"] == pytest.approx(0.875)
+    assert out.loc["good", "beats_reference"] == 1
+    assert out.loc["ref", "rel_mae"] == pytest.approx(1.0)
+    assert out.loc["ref", "beats_reference"] == 0
+    assert out.loc["good", "mae"] == pytest.approx(3.0)
+
+
+def test_summarise_needs_the_reference_model():
+    scores = pd.DataFrame({"model": ["a"], "origin": [1], "mae": [1.0],
+                           "rmse": 0.0, "mape": 0.0, "mase": 1.0})
+    with pytest.raises(ValueError):
+        summarise(scores, reference="missing")

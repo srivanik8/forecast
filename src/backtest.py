@@ -89,3 +89,25 @@ def score(backtest, series):
             "mase": mase(a, f, train),
         })
     return pd.DataFrame(rows)
+
+
+def summarise(scores, reference="seasonal_naive_drift"):
+    """
+    mean of each metric across origins, plus the comparison that matters:
+    mae relative to the hardest baseline (below 1 beats it) and how many
+    origins each model beat it at.
+    """
+    ref = scores[scores["model"] == reference].set_index("origin")["mae"]
+    if ref.empty:
+        raise ValueError(f"reference model {reference!r} is not in the scores")
+    scores = scores.assign(rel_mae=scores["mae"] / scores["origin"].map(ref))
+    out = scores.groupby("model").agg(
+        mae=("mae", "mean"),
+        rmse=("rmse", "mean"),
+        mape=("mape", "mean"),
+        mase=("mase", "mean"),
+        rel_mae=("rel_mae", "mean"),
+        beats_reference=("rel_mae", lambda r: int((r < 1).sum())),
+        origins=("origin", "nunique"),
+    )
+    return out.sort_values("mase")
