@@ -38,9 +38,10 @@ def main():
     #mae of each 12-month forecast, one column per origin
     by_origin = (out.groupby(["model", "origin"])
                  .apply(lambda g: mae(g["actual"], g["forecast"]), include_groups=False)
-                 .unstack("origin").round(3))
+                 .unstack("origin"))
     by_origin.columns = [f"{c:%Y}" for c in by_origin.columns]
-    by_origin["mean"] = by_origin.mean(axis=1).round(3)
+    by_origin["mean"] = by_origin.mean(axis=1)
+    by_origin = by_origin.round(3)
     by_origin = by_origin.sort_values("mean")
     by_origin.to_csv(os.path.join(RESULTS, "backtest_mae_by_origin.csv"))
 

@@ -36,7 +36,7 @@ def main():
             rows.append({
                 "origin": f"{test.index[0]:%Y-%m}",
                 "baseline": name,
-                "mae": round(mae(test, fn(train, HORIZON)), 3),
+                "mae": mae(test, fn(train, HORIZON)),
             })
 
     per_origin = pd.DataFrame(rows)
@@ -45,7 +45,7 @@ def main():
                .round(3).sort_values("mean_mae"))
 
     os.makedirs(RESULTS, exist_ok=True)
-    per_origin.to_csv(os.path.join(RESULTS, "baselines_by_origin.csv"), index=False)
+    per_origin.round(3).to_csv(os.path.join(RESULTS, "baselines_by_origin.csv"), index=False)
     summary.to_csv(os.path.join(RESULTS, "baselines_summary.csv"))
 
     #picture of the last cut point, with three years of context
