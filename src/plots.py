@@ -132,3 +132,21 @@ def plot_backtest(series, backtest, by_origin, models, path, ylabel="CO₂ (ppm)
     bottom.grid(axis="y", alpha=0.3)
     fig.tight_layout()
     return _save(fig, path)
+
+
+def plot_metrics(summary, path, reference="seasonal_naive_drift"):
+    """mase (vs naive) and mae relative to the hardest baseline, both with 1 marked."""
+    names = [TITLES.get(m, m.replace("_", " ")) for m in summary.index]
+    fig, axes = plt.subplots(1, 2, figsize=(11, 3.8), sharey=True)
+    panels = [("mase", "MASE (1 = one-step naive in-sample error)"),
+              ("rel_mae", f"MAE relative to {TITLES.get(reference, reference)}")]
+    for ax, (col, title) in zip(axes, panels):
+        ax.barh(names, summary[col], color="#1f4e79")
+        ax.axvline(1, color="#c00000", lw=1)
+        for y, v in enumerate(summary[col]):
+            ax.text(v, y, f" {v:.2f}", va="center", fontsize=8)
+        ax.set_title(title, fontsize=10)
+        ax.grid(axis="x", alpha=0.3)
+    axes[0].invert_yaxis()
+    fig.tight_layout()
+    return _save(fig, path)

@@ -1,0 +1,6 @@
+model,mae,rmse,mape,mase,rel_mae,beats_reference,origins
+sarima,0.457,0.529,0.125,0.437,0.759,6,8
+holt_winters,0.461,0.531,0.127,0.441,0.718,8,8
+seasonal_naive_drift,0.658,0.742,0.181,0.629,1.0,0,8
+seasonal_naive,1.732,1.788,0.475,1.655,3.126,0,8
+naive,2.129,2.534,0.582,2.035,4.162,0,8
