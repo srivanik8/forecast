@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.metrics import mae, mape, rmse
+from src.metrics import mae, mape, mase, rmse
 
 
 def test_mae_on_known_example():
@@ -37,3 +37,26 @@ def test_mape_on_known_example():
 def test_mape_refuses_zero_actuals():
     with pytest.raises(ValueError):
         mape([0, 1], [1, 1])
+
+
+def test_mase_on_known_example():
+    #naive steps on training are all 2, forecast misses by 1 -> 0.5
+    assert mase([10, 12], [11, 11], train=[0, 2, 4, 6]) == pytest.approx(0.5)
+
+
+def test_mase_with_seasonal_scale():
+    #season of 2: steps two back are all 4, forecast misses by 2 -> 0.5
+    assert mase([10], [8], train=[0, 1, 4, 5, 8, 9], season=2) == pytest.approx(0.5)
+
+
+def test_mase_of_naive_on_a_random_walk_is_about_one():
+    rng = np.random.default_rng(0)
+    walk = np.cumsum(rng.normal(size=20_000))
+    train, test = walk[:-1], walk[1:]
+    #one-step naive forecasts of each next value
+    assert mase(test[-5000:], walk[-5001:-1], train) == pytest.approx(1.0, abs=0.05)
+
+
+def test_mase_refuses_constant_training_window():
+    with pytest.raises(ValueError):
+        mase([1], [1], train=[3, 3, 3])
