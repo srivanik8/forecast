@@ -10,6 +10,8 @@ sees a value from on or after its origin.
 import numpy as np
 import pandas as pd
 
+from src.metrics import mae, mape, mase, rmse
+
 HORIZON = 12
 N_ORIGINS = 8
 STEP = 12  #a year apart, so the forecast windows never overlap
@@ -64,4 +66,26 @@ def run(series, forecasters, horizon=HORIZON, n_origins=N_ORIGINS, step=STEP):
                     "actual": actual,
                     "error": actual - f.at[date, "mean"],
                 })
+    return pd.DataFrame(rows)
+
+
+def score(backtest, series):
+    """
+    every metric for every (model, origin) forecast window.
+
+    mase is scaled on that origin's own training window - the data the model
+    was fitted on - never on the full series.
+    """
+    rows = []
+    for (model, origin), g in backtest.groupby(["model", "origin"], sort=False):
+        train = series[series.index <= g["train_end"].iloc[0]]
+        a, f = g["actual"], g["forecast"]
+        rows.append({
+            "model": model,
+            "origin": origin,
+            "mae": mae(a, f),
+            "rmse": rmse(a, f),
+            "mape": mape(a, f),
+            "mase": mase(a, f, train),
+        })
     return pd.DataFrame(rows)

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.backtest import origins, run
+from src.backtest import origins, run, score
 from src.baselines import BASELINES
 
 
@@ -87,3 +87,26 @@ def test_mismatched_forecast_dates_are_rejected():
 
     with pytest.raises(ValueError):
         run(SERIES, {"wrong": wrong_dates})
+
+
+def test_score_gives_one_row_per_model_and_origin():
+    scores = score(run(SERIES, BASELINES), SERIES)
+    assert len(scores) == len(BASELINES) * 8
+    assert set(scores.columns) == {"model", "origin", "mae", "rmse", "mape", "mase"}
+
+
+def test_score_scales_mase_on_each_origin_training_window_only():
+    #a straight line has one-step naive error 1 everywhere, so naive's mase
+    #equals its mae, which is the mean of 1..12 = 6.5
+    scores = score(run(SERIES, BASELINES), SERIES)
+    naive = scores[scores["model"] == "naive"]
+    assert np.allclose(naive["mae"], 6.5)
+    assert np.allclose(naive["mase"], 6.5)
+
+    #make the series jumpy only after the last origin: no mase may change
+    jumpy = SERIES.copy()
+    jumpy.iloc[-12:] += np.tile([0, 50], 6)
+    a = score(run(SERIES, BASELINES), SERIES)
+    b = score(run(jumpy, BASELINES), jumpy)
+    earlier = a["origin"] < SERIES.index[-12]
+    assert np.allclose(a.loc[earlier, "mase"], b.loc[earlier, "mase"])
