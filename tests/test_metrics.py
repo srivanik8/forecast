@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.metrics import coverage, mae, mape, mase, rmse
+from src.metrics import coverage, interval_width, mae, mape, mase, misses, rmse
 
 
 def test_mae_on_known_example():
@@ -71,3 +71,11 @@ def test_coverage_counts_actuals_inside_the_interval():
 def test_coverage_rejects_inverted_intervals():
     with pytest.raises(ValueError):
         coverage([1], [2], [0])
+
+
+def test_interval_width_is_the_mean_width():
+    assert interval_width([0, 1], [2, 5]) == pytest.approx(3.0)
+
+
+def test_misses_split_by_direction():
+    assert misses([5, 12, -1, 20], [0] * 4, [10] * 4) == {"below": 1, "above": 2}

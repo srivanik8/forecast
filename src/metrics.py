@@ -65,3 +65,17 @@ def coverage(actual, lower, upper):
     """share of actual values that fell inside their prediction interval."""
     actual, lower, upper = _bounds(actual, lower, upper)
     return float(np.mean((actual >= lower) & (actual <= upper)))
+
+
+def interval_width(lower, upper):
+    """mean width of the intervals. coverage means little without it."""
+    lower, upper = _arrays(lower, upper)
+    if np.any(lower > upper):
+        raise ValueError("lower bound above upper bound")
+    return float(np.mean(upper - lower))
+
+
+def misses(actual, lower, upper):
+    """how many actuals fell below and above their interval."""
+    actual, lower, upper = _bounds(actual, lower, upper)
+    return {"below": int(np.sum(actual < lower)), "above": int(np.sum(actual > upper))}
