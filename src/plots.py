@@ -150,3 +150,42 @@ def plot_metrics(summary, path, reference="seasonal_naive_drift"):
     axes[0].invert_yaxis()
     fig.tight_layout()
     return _save(fig, path)
+
+
+def plot_coverage(backtest, by_origin, models, path, nominal=0.95, ylabel="CO₂ (ppm)"):
+    """
+    one panel per model: every 95% interval, the actuals, and the misses.
+    bottom panel: coverage at each origin against the nominal 95%.
+    """
+    colours = ["#1f4e79", "#c55a11"]
+    fig, axes = plt.subplots(len(models) + 1, 1, figsize=(11, 3.2 * (len(models) + 1)))
+    for ax, colour, name in zip(axes, colours, models):
+        rows = backtest[backtest["model"] == name]
+        for _, window in rows.groupby("origin"):
+            ax.fill_between(window["date"], window["lower"], window["upper"],
+                            color=colour, alpha=0.25, lw=0)
+        ax.plot(rows["date"], rows["actual"], lw=1, color="black", label="actual")
+        out = rows[(rows["actual"] < rows["lower"]) | (rows["actual"] > rows["upper"])]
+        ax.scatter(out["date"], out["actual"], color="#c00000", s=18, zorder=3,
+                   label=f"outside interval ({len(out)})")
+        ax.set_title(f"{TITLES.get(name, name)}: 95% intervals", fontsize=10)
+        ax.set_ylabel(ylabel)
+        ax.legend(fontsize=8, loc="upper left")
+        ax.grid(alpha=0.3)
+
+    ax = axes[-1]
+    years = [f"{c:%Y}" for c in by_origin.columns]
+    width = 0.8 / len(models)
+    for k, (colour, name) in enumerate(zip(colours, models)):
+        xs = [i + (k - (len(models) - 1) / 2) * width for i in range(len(years))]
+        ax.bar(xs, 100 * by_origin.loc[name], width=width, color=colour,
+               label=TITLES.get(name, name))
+    ax.axhline(100 * nominal, color="#c00000", lw=1, ls="--", label=f"nominal {nominal:.0%}")
+    ax.set_xticks(range(len(years)), years)
+    ax.set_ylabel("Coverage (%)")
+    ax.set_ylim(0, 105)
+    ax.set_title("Coverage of each year's 12 intervals", fontsize=10)
+    ax.legend(fontsize=8, loc="lower left")
+    ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
+    return _save(fig, path)
