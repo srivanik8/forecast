@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from src.metrics import coverage, interval_width, mae, mape, mase, misses, rmse
+from src.metrics import (coverage, interval_width, mae, mape, mase, misses, rmse,
+                         wilson_interval)
 
 
 def test_mae_on_known_example():
@@ -79,3 +80,25 @@ def test_interval_width_is_the_mean_width():
 
 def test_misses_split_by_direction():
     assert misses([5, 12, -1, 20], [0] * 4, [10] * 4) == {"below": 1, "above": 2}
+
+
+def test_wilson_interval_on_known_example():
+    low, high = wilson_interval(9, 10)
+    assert low == pytest.approx(0.5958, abs=1e-4)
+    assert high == pytest.approx(0.9821, abs=1e-4)
+
+
+def test_wilson_interval_stays_inside_zero_and_one():
+    assert wilson_interval(0, 20)[0] == pytest.approx(0.0, abs=1e-12)
+    assert wilson_interval(20, 20)[1] == pytest.approx(1.0, abs=1e-12)
+
+
+def test_wilson_interval_narrows_with_more_data():
+    small = wilson_interval(9, 10)
+    big = wilson_interval(900, 1000)
+    assert big[1] - big[0] < small[1] - small[0]
+
+
+def test_wilson_interval_rejects_bad_counts():
+    with pytest.raises(ValueError):
+        wilson_interval(11, 10)

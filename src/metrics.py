@@ -79,3 +79,21 @@ def misses(actual, lower, upper):
     """how many actuals fell below and above their interval."""
     actual, lower, upper = _bounds(actual, lower, upper)
     return {"below": int(np.sum(actual < lower)), "above": int(np.sum(actual > upper))}
+
+
+def wilson_interval(hits, n, z=1.96):
+    """
+    95% wilson score interval for a proportion such as coverage.
+
+    with 96 intervals, observed coverage moves a few points by chance alone.
+    if the nominal 95% sits inside this range, the gap is not evidence of
+    miscalibration. it treats every interval as independent, which forecasts
+    from the same origin are not, so the true range is wider than this.
+    """
+    if n <= 0 or not 0 <= hits <= n:
+        raise ValueError("need 0 <= hits <= n and n > 0")
+    p = hits / n
+    denom = 1 + z ** 2 / n
+    centre = (p + z ** 2 / (2 * n)) / denom
+    half = z * np.sqrt(p * (1 - p) / n + z ** 2 / (4 * n ** 2)) / denom
+    return float(centre - half), float(centre + half)
