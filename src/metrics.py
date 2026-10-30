@@ -51,3 +51,17 @@ def mase(actual, pred, train, season=1):
     if np.isclose(scale, 0.0):
         raise ValueError("mase is undefined for a constant training window")
     return float(np.mean(np.abs(actual - pred)) / scale)
+
+
+def _bounds(actual, lower, upper):
+    actual, lower = _arrays(actual, lower)
+    _, upper = _arrays(actual, upper)
+    if np.any(lower > upper):
+        raise ValueError("lower bound above upper bound")
+    return actual, lower, upper
+
+
+def coverage(actual, lower, upper):
+    """share of actual values that fell inside their prediction interval."""
+    actual, lower, upper = _bounds(actual, lower, upper)
+    return float(np.mean((actual >= lower) & (actual <= upper)))

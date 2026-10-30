@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.metrics import mae, mape, mase, rmse
+from src.metrics import coverage, mae, mape, mase, rmse
 
 
 def test_mae_on_known_example():
@@ -60,3 +60,14 @@ def test_mase_of_naive_on_a_random_walk_is_about_one():
 def test_mase_refuses_constant_training_window():
     with pytest.raises(ValueError):
         mase([1], [1], train=[3, 3, 3])
+
+
+def test_coverage_counts_actuals_inside_the_interval():
+    #inside, on the edge (counts), above, below
+    actual = [5, 10, 12, -1]
+    assert coverage(actual, [0, 0, 0, 0], [10, 10, 10, 10]) == pytest.approx(0.5)
+
+
+def test_coverage_rejects_inverted_intervals():
+    with pytest.raises(ValueError):
+        coverage([1], [2], [0])
