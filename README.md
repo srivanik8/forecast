@@ -113,6 +113,30 @@ with seasonal naive + drift at the same origin (below 1 beats it).
 - MAPE is tiny (about 0.13%) because CO₂ sits around 360 ppm. It says little
   here.
 
+## Interval coverage
+
+How often did the actual value land inside the model's 95% prediction
+interval? There are 96 intervals per model (8 origins × 12 months).
+
+| Model | Inside | Coverage | Wilson 95% range | Mean width (ppm) | Missed below / above |
+|---|---|---|---|---|---|
+| SARIMA | 89 / 96 | **92.7%** | 85.7% – 96.4% | 1.94 | 0 / 7 |
+| Holt-Winters | 88 / 96 | **91.7%** | 84.4% – 95.7% | 2.01 | 0 / 8 |
+
+![Coverage](results/figures/coverage.png)
+
+- **Overall, both models are slightly overconfident.** But with 96 intervals,
+  95% is still inside the plausible range, so the shortfall on its own is not
+  conclusive.
+- **The misses are not spread out.** 14 of the 15 fall in 1998, and every one
+  is *above* the interval. In 1998 both models covered only 5 of 12 months.
+  In every other year coverage was 92–100%.
+- So the intervals are honest in ordinary years but break down in an unusual
+  one. Anyone planning around them would have been caught out in exactly the
+  year it mattered most.
+- The Wilson range treats each interval as independent. The 12 intervals from
+  one origin are not (1998 shows that), so the true uncertainty is wider still.
+
 ## How to run it
 
 ```bash
@@ -125,5 +149,6 @@ python -m src.compare_baselines  # step 2: baseline comparison
 python -m src.fit_models         # step 3: model fit + diagnostics
 python -m src.run_backtest       # step 4: rolling-origin backtest
 python -m src.evaluate           # step 5: metrics
+python -m src.coverage           # step 6: interval coverage
 python -m pytest                 # tests
 ```
