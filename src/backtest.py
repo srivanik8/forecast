@@ -10,7 +10,8 @@ sees a value from on or after its origin.
 import numpy as np
 import pandas as pd
 
-from src.metrics import mae, mape, mase, rmse
+from src.metrics import (coverage, interval_width, mae, mape, mase, misses, rmse,
+                         wilson_interval)
 
 HORIZON = 12
 N_ORIGINS = 8
@@ -111,3 +112,39 @@ def summarise(scores, reference="seasonal_naive_drift"):
         origins=("origin", "nunique"),
     )
     return out.sort_values("mase")
+
+
+def coverage_summary(backtest, nominal=0.95):
+    """
+    are the 95% intervals honest? one row per model that produced intervals.
+
+    coverage well below nominal means overconfident, well above means the
+    intervals are too wide to be useful.
+    """
+    rows = []
+    with_intervals = backtest.dropna(subset=["lower", "upper"])
+    for model, g in with_intervals.groupby("model"):
+        a, lo, hi = g["actual"], g["lower"], g["upper"]
+        n = len(g)
+        hits = int(round(coverage(a, lo, hi) * n))
+        ci_low, ci_high = wilson_interval(hits, n)
+        rows.append({
+            "model": model,
+            "intervals": n,
+            "inside": hits,
+            "coverage": hits / n,
+            "ci_low": ci_low,
+            "ci_high": ci_high,
+            "nominal": nominal,
+            "nominal_in_ci": ci_low <= nominal <= ci_high,
+            "mean_width": interval_width(lo, hi),
+            **{f"missed_{k}": v for k, v in misses(a, lo, hi).items()},
+        })
+    return pd.DataFrame(rows).set_index("model")
+
+
+def coverage_by(backtest, by):
+    """coverage per model split by another column, e.g. origin or horizon."""
+    g = backtest.dropna(subset=["lower", "upper"])
+    inside = (g["actual"] >= g["lower"]) & (g["actual"] <= g["upper"])
+    return inside.groupby([g["model"], g[by]]).mean().unstack(by)

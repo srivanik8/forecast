@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.backtest import origins, run, score, summarise
+from src.backtest import coverage_by, coverage_summary, origins, run, score, summarise
 from src.baselines import BASELINES
 
 
@@ -135,3 +135,34 @@ def test_summarise_needs_the_reference_model():
                            "rmse": 0.0, "mape": 0.0, "mase": 1.0})
     with pytest.raises(ValueError):
         summarise(scores, reference="missing")
+
+
+def banded(width):
+    def forecaster(train, horizon):
+        f = BASELINES["naive"](train, horizon)
+        return pd.DataFrame({"mean": f, "lower": f - width, "upper": f + width})
+    return forecaster
+
+
+def test_coverage_summary_skips_models_without_intervals():
+    out = run(SERIES, {"naive": BASELINES["naive"], "wide": banded(100)})
+    cov = coverage_summary(out)
+    assert list(cov.index) == ["wide"]
+    assert cov.loc["wide", "intervals"] == 96
+    assert cov.loc["wide", "coverage"] == 1.0
+    assert cov.loc["wide", "mean_width"] == pytest.approx(200)
+
+
+def test_coverage_summary_counts_misses_by_direction():
+    #naive on a rising line misses by h, so a band of 6.5 holds h = 1..6 only,
+    #and every miss is above the interval
+    cov = coverage_summary(run(SERIES, {"band": banded(6.5)}))
+    assert cov.loc["band", "coverage"] == pytest.approx(0.5)
+    assert cov.loc["band", "missed_above"] == 48
+    assert cov.loc["band", "missed_below"] == 0
+    assert not cov.loc["band", "nominal_in_ci"]
+
+
+def test_coverage_by_horizon():
+    by_h = coverage_by(run(SERIES, {"band": banded(6.5)}), "horizon")
+    assert list(by_h.loc["band"]) == [1.0] * 6 + [0.0] * 6
