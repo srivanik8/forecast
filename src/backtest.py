@@ -159,3 +159,22 @@ def error_by_horizon(backtest):
         "rmse": np.sqrt(g["sq_err"].mean()),
         "n": g.size(),
     })
+
+
+def horizon_decay(by_horizon, metric="mae"):
+    """
+    how much worse long-range forecasts are than short-range ones.
+
+    ratio_12_1 compares 12 months ahead with 1 month ahead, as asked. each of
+    those rests on only one forecast per origin, so ratio_q4_q1 compares the
+    average of months 10-12 with months 1-3 as a steadier check.
+    """
+    t = by_horizon[metric].unstack("horizon")
+    first, last = t.columns.min(), t.columns.max()
+    out = pd.DataFrame({
+        f"{metric}_h{first}": t[first],
+        f"{metric}_h{last}": t[last],
+        f"ratio_{last}_{first}": t[last] / t[first],
+        f"ratio_q4_q1": t[t.columns[-3:]].mean(axis=1) / t[t.columns[:3]].mean(axis=1),
+    })
+    return out.sort_values(f"ratio_{last}_{first}", ascending=False)

@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.backtest import (coverage_by, coverage_summary, error_by_horizon, origins, run, score,
-                          summarise)
+from src.backtest import (coverage_by, coverage_summary, error_by_horizon, horizon_decay,
+                          origins, run, score, summarise)
 from src.baselines import BASELINES
 
 
@@ -177,3 +177,20 @@ def test_error_by_horizon_on_a_straight_line():
     assert np.allclose(naive["mae"], range(1, 13))
     assert np.allclose(naive["rmse"], range(1, 13))
     assert (naive["n"] == 8).all()
+
+
+def test_horizon_decay_on_a_straight_line():
+    #naive misses by h: 12 / 1 = 12, and (10+11+12) / (1+2+3) = 5.5
+    by_h = error_by_horizon(run(SERIES, {"naive": BASELINES["naive"]}))
+    decay = horizon_decay(by_h)
+    assert decay.loc["naive", "mae_h1"] == pytest.approx(1.0)
+    assert decay.loc["naive", "mae_h12"] == pytest.approx(12.0)
+    assert decay.loc["naive", "ratio_12_1"] == pytest.approx(12.0)
+    assert decay.loc["naive", "ratio_q4_q1"] == pytest.approx(5.5)
+
+
+def test_horizon_decay_is_flat_when_error_does_not_grow():
+    flat = run(SERIES, {"drift": BASELINES["seasonal_naive_drift"]})
+    flat["error"] = 0.5
+    decay = horizon_decay(error_by_horizon(flat))
+    assert decay.loc["drift", "ratio_12_1"] == pytest.approx(1.0)
