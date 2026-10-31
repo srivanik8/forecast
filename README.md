@@ -137,6 +137,31 @@ interval? There are 96 intervals per model (8 origins × 12 months).
 - The Wilson range treats each interval as independent. The 12 intervals from
   one origin are not (1998 shows that), so the true uncertainty is wider still.
 
+## Horizon decay
+
+Every backtest error grouped by how many months ahead it was (8 forecasts
+per horizon).
+
+| Forecaster | MAE 1 month ahead | MAE 12 months ahead | 12-month ÷ 1-month | Without 1998 |
+|---|---|---|---|---|
+| SARIMA | 0.254 | 0.558 | **2.20×** | 1.72× |
+| Holt-Winters | 0.259 | 0.586 | **2.27×** | 1.80× |
+| Seasonal naive + drift | 0.606 | 0.609 | 1.00× | 0.89× |
+
+![Horizon decay](results/figures/horizon.png)
+
+- **The models' 12-month forecasts are about 2.2× less accurate than their
+  1-month forecasts.** Without the 1998 origin the ratio is about 1.75×, so
+  that one year accounts for a good part of the decay.
+- **Most of the models' advantage is short-range.** At 1 month ahead their
+  error is less than half the drift baseline's. At 12 months they are only
+  4–8% better.
+- The 95% intervals widen with the horizon by about the same factor (from
+  1.2 ppm to 2.5–2.7 ppm), so the models do know they get less certain.
+- The baselines barely decay: they already look a year back, so every horizon
+  is equally hard for them. Naive's curve follows the seasonal cycle, not the
+  horizon, so its ratio means nothing.
+
 ## How to run it
 
 ```bash
@@ -150,5 +175,6 @@ python -m src.fit_models         # step 3: model fit + diagnostics
 python -m src.run_backtest       # step 4: rolling-origin backtest
 python -m src.evaluate           # step 5: metrics
 python -m src.coverage           # step 6: interval coverage
+python -m src.horizon            # step 7: horizon decay
 python -m pytest                 # tests
 ```
