@@ -178,3 +178,9 @@ def horizon_decay(by_horizon, metric="mae"):
         f"ratio_q4_q1": t[t.columns[-3:]].mean(axis=1) / t[t.columns[:3]].mean(axis=1),
     })
     return out.sort_values(f"ratio_{last}_{first}", ascending=False)
+
+
+def width_by_horizon(backtest):
+    """mean 95% interval width per model at each horizon. it should grow too."""
+    g = backtest.dropna(subset=["lower", "upper"])
+    return (g["upper"] - g["lower"]).groupby([g["model"], g["horizon"]]).mean().unstack("horizon")

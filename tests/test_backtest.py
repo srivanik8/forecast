@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from src.backtest import (coverage_by, coverage_summary, error_by_horizon, horizon_decay,
-                          origins, run, score, summarise)
+                          origins, run, score, summarise, width_by_horizon)
 from src.baselines import BASELINES
 
 
@@ -194,3 +194,14 @@ def test_horizon_decay_is_flat_when_error_does_not_grow():
     flat["error"] = 0.5
     decay = horizon_decay(error_by_horizon(flat))
     assert decay.loc["drift", "ratio_12_1"] == pytest.approx(1.0)
+
+
+def test_width_by_horizon_skips_point_forecasts():
+    def growing(train, horizon):
+        f = BASELINES["naive"](train, horizon)
+        h = np.arange(1, horizon + 1)
+        return pd.DataFrame({"mean": f, "lower": f - h, "upper": f + h})
+
+    out = width_by_horizon(run(SERIES, {"naive": BASELINES["naive"], "growing": growing}))
+    assert list(out.index) == ["growing"]
+    assert np.allclose(out.loc["growing"], 2 * np.arange(1, 13))
