@@ -1,0 +1,6 @@
+model,mae_h1,mae_h12,ratio_12_1,ratio_q4_q1
+holt_winters,0.259,0.586,2.267,1.627
+sarima,0.254,0.558,2.198,1.579
+naive,1.084,1.781,1.642,0.575
+seasonal_naive,1.687,1.781,1.056,1.024
+seasonal_naive_drift,0.606,0.609,1.005,0.818
