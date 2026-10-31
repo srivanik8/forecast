@@ -189,3 +189,37 @@ def plot_coverage(backtest, by_origin, models, path, nominal=0.95, ylabel="CO₂
     ax.grid(axis="y", alpha=0.3)
     fig.tight_layout()
     return _save(fig, path)
+
+
+def plot_horizon(by_horizon, widths, path, models, baselines):
+    """
+    left: mae at each month ahead, models solid and baselines dashed.
+    right: how the 95% interval widens with the horizon.
+    """
+    colours = {"sarima": "#1f4e79", "holt_winters": "#c55a11",
+               "seasonal_naive_drift": "#548235", "seasonal_naive": "#7f6000",
+               "naive": "#7030a0"}
+    mae = by_horizon["mae"].unstack("horizon")
+    fig, (left, right) = plt.subplots(1, 2, figsize=(11, 4))
+    for name in models + baselines:
+        left.plot(mae.columns, mae.loc[name], marker="o", ms=3,
+                  ls="-" if name in models else "--", color=colours.get(name),
+                  label=TITLES.get(name, name.replace("_", " ")))
+    left.set_xlabel("Months ahead")
+    left.set_ylabel("MAE (ppm)")
+    left.set_title("Error by forecast horizon", fontsize=10)
+    left.set_xticks(mae.columns)
+    left.legend(fontsize=8)
+    left.grid(alpha=0.3)
+
+    for name in models:
+        right.plot(widths.columns, widths.loc[name], marker="o", ms=3,
+                   color=colours.get(name), label=TITLES.get(name, name))
+    right.set_xlabel("Months ahead")
+    right.set_ylabel("Mean 95% interval width (ppm)")
+    right.set_title("Interval width by forecast horizon", fontsize=10)
+    right.set_xticks(widths.columns)
+    right.legend(fontsize=8)
+    right.grid(alpha=0.3)
+    fig.tight_layout()
+    return _save(fig, path)
