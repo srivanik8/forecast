@@ -148,3 +148,14 @@ def coverage_by(backtest, by):
     g = backtest.dropna(subset=["lower", "upper"])
     inside = (g["actual"] >= g["lower"]) & (g["actual"] <= g["upper"])
     return inside.groupby([g["model"], g[by]]).mean().unstack(by)
+
+
+def error_by_horizon(backtest):
+    """mae and rmse per model at each number of months ahead (1 to 12)."""
+    err = backtest.assign(abs_err=backtest["error"].abs(), sq_err=backtest["error"] ** 2)
+    g = err.groupby(["model", "horizon"])
+    return pd.DataFrame({
+        "mae": g["abs_err"].mean(),
+        "rmse": np.sqrt(g["sq_err"].mean()),
+        "n": g.size(),
+    })

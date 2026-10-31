@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.backtest import coverage_by, coverage_summary, origins, run, score, summarise
+from src.backtest import (coverage_by, coverage_summary, error_by_horizon, origins, run, score,
+                          summarise)
 from src.baselines import BASELINES
 
 
@@ -166,3 +167,13 @@ def test_coverage_summary_counts_misses_by_direction():
 def test_coverage_by_horizon():
     by_h = coverage_by(run(SERIES, {"band": banded(6.5)}), "horizon")
     assert list(by_h.loc["band"]) == [1.0] * 6 + [0.0] * 6
+
+
+def test_error_by_horizon_on_a_straight_line():
+    #naive on a rising line misses by exactly h at horizon h
+    out = error_by_horizon(run(SERIES, {"naive": BASELINES["naive"]}))
+    naive = out.loc["naive"]
+    assert list(naive.index) == list(range(1, 13))
+    assert np.allclose(naive["mae"], range(1, 13))
+    assert np.allclose(naive["rmse"], range(1, 13))
+    assert (naive["n"] == 8).all()
