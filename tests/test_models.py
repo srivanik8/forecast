@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-pytestmark = pytest.mark.slow
-
 from src.models import FITTERS, MODELS, diagnostics
+
+pytestmark = pytest.mark.slow
 
 
 def synthetic(n=120, seed=0):
