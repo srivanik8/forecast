@@ -58,3 +58,22 @@ def test_load_series_is_clean_and_monthly():
     #no skipped months anywhere
     assert len(s) == len(pd.date_range(s.index[0], s.index[-1], freq="MS"))
     assert len(s) >= 200
+
+
+def test_to_monthly_handles_unsorted_readings():
+    idx = pd.to_datetime(["2000-02-05", "2000-01-01", "2000-01-15"])
+    m = to_monthly(pd.Series([10.0, 1.0, 3.0], index=idx))
+    assert list(m.index) == [pd.Timestamp("2000-01-01"), pd.Timestamp("2000-02-01")]
+    assert list(m) == [2.0, 10.0]
+
+
+def test_to_monthly_averages_duplicate_readings():
+    idx = pd.to_datetime(["2000-01-15", "2000-01-15", "2000-01-01"])
+    m = to_monthly(pd.Series([3.0, 5.0, 1.0], index=idx))
+    assert m.loc["2000-01-01"] == 3.0
+
+
+def test_to_monthly_ignores_missing_weeks_inside_a_month():
+    #a month with some weeks missing is the mean of the weeks it has
+    s = weekly([1.0, np.nan, 3.0, np.nan])
+    assert to_monthly(s).iloc[0] == 2.0
