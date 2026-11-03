@@ -1,7 +1,23 @@
 # forecast
 
-Monthly time-series forecasting with honest validation: can a statistical model
-beat a naive baseline, and can its stated confidence be trusted?
+SARIMA and Holt-Winters forecasts of monthly CO₂, tested against naive
+baselines with a rolling-origin backtest, interval coverage and horizon decay.
+
+## The question
+
+Can a statistical model beat the hardest naive baseline on this series, and
+when it says it is 95% confident, is it right 95% of the time?
+
+## Data
+
+Mauna Loa atmospheric CO₂ (ppm), from `statsmodels.datasets.co2`. 2,284 weekly
+readings are averaged into **526 monthly observations, Mar 1958 – Dec 2001**.
+The 5 months with no readings are filled by time interpolation.
+
+The series has a strong, accelerating trend (0.83 ppm/year in the first decade,
+1.52 in the last) and a stable annual cycle of about 6 ppm.
+
+![Monthly CO₂ series](results/figures/series.png)
 
 The full step-by-step write-up, with every table, is in
 [docs/walkthrough.md](docs/walkthrough.md).
