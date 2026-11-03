@@ -87,8 +87,8 @@ choice of model: judged by MASE, even the drift baseline looks strong (0.63).
   intervals as independent, but the 12 from one origin are not.
 - **No tuning.** Both models use standard settings. A tuned model might do
   better; it would also need a nested backtest to stay honest.
-- **Old data.** The series ends in 2001, so this does not show how the models
-  handle the faster growth since then.
+- **Old data.** The series ends in 2001, so nothing here tests the models on
+  more recent years.
 - **Interpolation.** 5 early months are filled from the readings on both
   sides of the gap, a tiny use of information from the future.
 
@@ -125,3 +125,23 @@ read the backtest output, so run step 4 first.
 
 `python -m pytest -m "not slow"` skips the model-fitting tests (about 2
 seconds instead of 20).
+
+## Repo layout
+
+```
+forecast/
+├── README.md
+├── requirements.txt
+├── docs/walkthrough.md      # step-by-step results with every table
+├── src/
+│   ├── data.py              # loading, missing values, monthly resampling
+│   ├── baselines.py         # naive, seasonal naive, seasonal naive + drift
+│   ├── models.py            # SARIMA, Holt-Winters
+│   ├── backtest.py          # rolling-origin loop, scoring, coverage, horizons
+│   ├── metrics.py           # MAE, RMSE, MAPE, MASE, coverage, Wilson range
+│   ├── plots.py             # figures
+│   └── run_all.py           # runs steps 1-7 (one script per step alongside)
+├── tests/                   # leakage, metrics, loader, reproducibility
+├── scripts/check_clean_clone.sh
+└── results/                 # csv outputs and figures/
+```
