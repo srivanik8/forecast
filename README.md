@@ -36,6 +36,37 @@ The series has a strong, accelerating trend (0.83 ppm/year in the first decade,
 - **Horizon decay.** Error grouped by months ahead, comparing 12 months
   ahead with 1 month ahead.
 
+## Results
+
+**Accuracy** (mean over 8 origins, 12 months ahead each):
+
+| Forecaster | MAE (ppm) | MASE | Relative MAE vs drift | Beats drift baseline |
+|---|---|---|---|---|
+| SARIMA | 0.457 | 0.437 | **0.759** | 6 of 8 years |
+| Holt-Winters | 0.461 | 0.441 | **0.718** | 8 of 8 years |
+| Seasonal naive + drift | 0.658 | 0.629 | 1.000 | – |
+| Seasonal naive | 1.732 | 1.655 | 3.126 | 0 of 8 |
+| Naive | 2.129 | 2.035 | 4.162 | 0 of 8 |
+
+![Backtest forecasts against actuals](results/figures/backtest.png)
+
+**Interval coverage** (96 intervals per model, nominal 95%):
+
+| Model | Coverage | Wilson 95% range | Misses in 1998 |
+|---|---|---|---|
+| SARIMA | 92.7% | 85.7% – 96.4% | 7 of 7 |
+| Holt-Winters | 91.7% | 84.4% – 95.7% | 7 of 8 |
+
+**Horizon decay** (MAE 12 months ahead ÷ MAE 1 month ahead):
+
+| Model | 1 month | 12 months | Ratio | Ratio without 1998 |
+|---|---|---|---|---|
+| SARIMA | 0.254 | 0.558 | **2.20×** | 1.72× |
+| Holt-Winters | 0.259 | 0.586 | **2.27×** | 1.80× |
+| Seasonal naive + drift | 0.606 | 0.609 | 1.00× | 0.89× |
+
+![Error by horizon](results/figures/horizon.png)
+
 The full step-by-step write-up, with every table, is in
 [docs/walkthrough.md](docs/walkthrough.md).
 
