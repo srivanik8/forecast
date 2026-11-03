@@ -67,6 +67,16 @@ The series has a strong, accelerating trend (0.83 ppm/year in the first decade,
 
 ![Error by horizon](results/figures/horizon.png)
 
+## What I found
+
+Both models beat the hardest baseline, cutting its error by about a quarter.
+Most of that edge is short-range, though: 12 months out they are only 4–8%
+better. Their 95% intervals cover 92–93% of actuals, which is close to honest
+overall. The surprise was that almost every miss came in one year, 1998,
+always above the interval. So the intervals hold in ordinary years and fail in
+the year it matters most. The choice of benchmark also mattered more than the
+choice of model: judged by MASE, even the drift baseline looks strong (0.63).
+
 The full step-by-step write-up, with every table, is in
 [docs/walkthrough.md](docs/walkthrough.md).
 
