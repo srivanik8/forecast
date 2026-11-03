@@ -19,6 +19,23 @@ The series has a strong, accelerating trend (0.83 ppm/year in the first decade,
 
 ![Monthly CO₂ series](results/figures/series.png)
 
+## Method
+
+- **Baselines first.** Naive (last value), seasonal naive (same month last
+  year) and seasonal naive + drift (plus the average yearly rise). Drift is
+  by far the hardest to beat, so it is the headline benchmark.
+- **Models.** SARIMA(1,1,1)(1,1,1,12) and additive Holt-Winters, fitted as
+  ETS(A,A,A) so it gives prediction intervals. Neither is tuned.
+- **Rolling-origin backtest.** 8 origins a year apart, forecasting each year
+  from 1994 to 2001, 12 months ahead. Every forecaster is refit from scratch
+  at every origin on data before that origin only, giving 96 forecasts each.
+- **Metrics.** MAE, RMSE, MAPE and MASE, plus relative MAE: each model's error
+  divided by the drift baseline's at the same origin (below 1 beats it).
+- **Interval coverage.** The share of actual values inside the 95% intervals,
+  with a Wilson range for how much that share could move by chance.
+- **Horizon decay.** Error grouped by months ahead, comparing 12 months
+  ahead with 1 month ahead.
+
 The full step-by-step write-up, with every table, is in
 [docs/walkthrough.md](docs/walkthrough.md).
 
