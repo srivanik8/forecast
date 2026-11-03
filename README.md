@@ -77,6 +77,21 @@ always above the interval. So the intervals hold in ordinary years and fail in
 the year it matters most. The choice of benchmark also mattered more than the
 choice of model: judged by MASE, even the drift baseline looks strong (0.63).
 
+## Limitations
+
+- **One series.** CO₂ is smooth and highly regular. These results say nothing
+  about noisier series such as demand or sales.
+- **8 origins.** Each horizon rests on 8 forecasts, and a single year (1998)
+  moves several results noticeably. More origins would firm them up.
+- **Coverage uncertainty is understated.** The Wilson range treats all 96
+  intervals as independent, but the 12 from one origin are not.
+- **No tuning.** Both models use standard settings. A tuned model might do
+  better; it would also need a nested backtest to stay honest.
+- **Old data.** The series ends in 2001, so this does not show how the models
+  handle the faster growth since then.
+- **Interpolation.** 5 early months are filled from the readings on both
+  sides of the gap, a tiny use of information from the future.
+
 The full step-by-step write-up, with every table, is in
 [docs/walkthrough.md](docs/walkthrough.md).
 
