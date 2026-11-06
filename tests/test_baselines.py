@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.baselines import BASELINES, naive, seasonal_naive, seasonal_naive_drift
+from src.baselines import (BASELINES, CANDIDATE_BASELINES, naive, seasonal_naive,
+                           seasonal_naive_drift)
 
 
 def monthly(values, start="2000-01-01"):
@@ -58,3 +59,23 @@ def test_baselines_ignore_anything_after_training(name):
     b.iloc[48:] = 999.0
     fn = BASELINES[name]
     assert fn(a.iloc[:48], 12).equals(fn(b.iloc[:48], 12))
+
+
+def test_recent_drift_follows_accelerating_growth():
+    #yearly rise doubles from 1 to 2 halfway through: recent drift sees only the 2
+    t = np.arange(240)
+    rise = np.where(t < 120, t / 12, 10 + (t - 120) / 6)
+    s = monthly(rise)
+    full = seasonal_naive_drift(s, 12)
+    recent = CANDIDATE_BASELINES["drift_5y"](s, 12)
+    assert np.allclose(recent - seasonal_naive(s, 12), 2.0)
+    assert (full - seasonal_naive(s, 12) < 2.0).all()
+
+
+def test_recent_drift_ignores_anything_after_training():
+    t = np.arange(240, dtype=float)
+    a = monthly(t)
+    b = a.copy()
+    b.iloc[-12:] = 999.0
+    fn = CANDIDATE_BASELINES["drift_3y"]
+    assert fn(a.iloc[:-12], 12).equals(fn(b.iloc[:-12], 12))
