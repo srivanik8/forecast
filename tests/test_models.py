@@ -82,3 +82,9 @@ def test_auto_sarima_picks_the_lowest_aic_order_from_its_grid():
     f = sarima_auto(TRAIN, 12, grid=grid)
     aics = {g: fit_sarima(TRAIN, order=g[0], seasonal_order=g[1]).aic for g in grid}
     assert f.attrs["orders"] == min(aics, key=aics.get)
+
+
+def test_ensemble_is_the_average_of_sarima_and_holt_winters():
+    f = CANDIDATES["ensemble"](TRAIN, 12)
+    expected = (MODELS["sarima"](TRAIN, 12) + MODELS["holt_winters"](TRAIN, 12)) / 2
+    pd.testing.assert_frame_equal(f, expected)

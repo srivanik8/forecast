@@ -138,10 +138,21 @@ def sarima_auto(train, horizon, grid=SARIMA_GRID):
     return out
 
 
+def ensemble(train, horizon):
+    """
+    equal-weight average of sarima and holt-winters.
+
+    averaging two models whose errors differ often beats both. the interval
+    is the average of their bounds - a rough approximation, not a derived one.
+    """
+    return (sarima(train, horizon) + holt_winters(train, horizon)) / 2
+
+
 #candidate improvements, kept out of MODELS so the main results stay as reported.
 #src.experiments puts them through the same backtest
 CANDIDATES = {
     "holt_winters_log": holt_winters_log,
     "holt_winters_damped": holt_winters_damped,
     "sarima_auto": sarima_auto,
+    "ensemble": ensemble,
 }
