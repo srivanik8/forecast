@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.models import CANDIDATES, FITTERS, MODELS, diagnostics
+from src.models import CANDIDATES, FITTERS, MODELS, diagnostics, fit_sarima, sarima_auto
 
 pytestmark = pytest.mark.slow
 
@@ -75,3 +75,10 @@ def test_candidate_forecast_shape_intervals_and_no_leakage(name):
 def test_log_holt_winters_intervals_are_wider_above_than_below():
     f = CANDIDATES["holt_winters_log"](TRAIN, 12)
     assert ((f["upper"] - f["mean"]) > (f["mean"] - f["lower"])).all()
+
+
+def test_auto_sarima_picks_the_lowest_aic_order_from_its_grid():
+    grid = [((0, 1, 0), (0, 1, 0, 12)), ((1, 1, 1), (1, 1, 1, 12))]
+    f = sarima_auto(TRAIN, 12, grid=grid)
+    aics = {g: fit_sarima(TRAIN, order=g[0], seasonal_order=g[1]).aic for g in grid}
+    assert f.attrs["orders"] == min(aics, key=aics.get)

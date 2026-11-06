@@ -7,6 +7,7 @@ mean, lower and upper (the 95% prediction interval). nothing outside the
 training series is used, so every call is a clean refit.
 """
 
+import itertools
 import warnings
 
 import numpy as np
@@ -110,9 +111,37 @@ def holt_winters_damped(train, horizon):
     return _frame(mean, lower, upper, index)
 
 
+#small grid around the default: d and D stay at 1, the series needs both
+SARIMA_GRID = [((p, 1, q), (P, 1, Q, SEASON))
+               for p, q, P, Q in itertools.product([0, 1, 2], [0, 1], [0, 1], [0, 1])]
+
+
+def sarima_auto(train, horizon, grid=SARIMA_GRID):
+    """
+    sarima with its orders picked by aic, refit on each training window.
+
+    the choice only ever sees the training window, so tuning cannot leak the
+    test period. the chosen orders are kept in the result's attrs.
+    """
+    best, best_orders = None, None
+    for order, seasonal_order in grid:
+        try:
+            fit = fit_sarima(train, order=order, seasonal_order=seasonal_order)
+        except (ValueError, np.linalg.LinAlgError):
+            continue
+        if best is None or fit.aic < best.aic:
+            best, best_orders = fit, (order, seasonal_order)
+    pred = best.get_forecast(horizon).summary_frame(alpha=ALPHA)
+    out = _frame(pred["mean"].to_numpy(), pred["mean_ci_lower"].to_numpy(),
+                 pred["mean_ci_upper"].to_numpy(), pred.index)
+    out.attrs["orders"] = best_orders
+    return out
+
+
 #candidate improvements, kept out of MODELS so the main results stay as reported.
 #src.experiments puts them through the same backtest
 CANDIDATES = {
     "holt_winters_log": holt_winters_log,
     "holt_winters_damped": holt_winters_damped,
+    "sarima_auto": sarima_auto,
 }
