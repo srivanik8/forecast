@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.models import FITTERS, MODELS, diagnostics
+from src.models import CANDIDATES, FITTERS, MODELS, diagnostics
 
 pytestmark = pytest.mark.slow
 
@@ -57,3 +57,21 @@ def test_diagnostics_report_expected_fields(name):
     assert 0 <= d["ljung_box_p"] <= 1
     #noise was generated with std 0.2, residuals should be close to that
     assert d["resid_std"] < 0.5
+
+
+@pytest.mark.parametrize("name", list(CANDIDATES))
+def test_candidate_forecast_shape_intervals_and_no_leakage(name):
+    fn = CANDIDATES[name]
+    f = fn(TRAIN, 12)
+    assert list(f.columns) == ["mean", "lower", "upper"]
+    assert f.index.equals(TEST.index)
+    assert (f["lower"] < f["mean"]).all() and (f["mean"] < f["upper"]).all()
+    assert np.mean(np.abs(f["mean"] - TEST)) < 1.0
+    wrecked = SERIES.copy()
+    wrecked.iloc[-12:] = 1e6
+    pd.testing.assert_frame_equal(f, fn(wrecked.iloc[:-12], 12))
+
+
+def test_log_holt_winters_intervals_are_wider_above_than_below():
+    f = CANDIDATES["holt_winters_log"](TRAIN, 12)
+    assert ((f["upper"] - f["mean"]) > (f["mean"] - f["lower"])).all()

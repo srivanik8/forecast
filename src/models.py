@@ -51,12 +51,27 @@ def fit_holt_winters(train, seasonal="add"):
                         seasonal_periods=SEASON).fit(disp=False)
 
 
-def holt_winters(train, horizon):
-    fit = fit_holt_winters(train)
-    n = len(train)
+def _ets_forecast(fit, n, horizon):
     pred = fit.get_prediction(start=n, end=n + horizon - 1).summary_frame(alpha=ALPHA)
-    return _frame(pred["mean"].to_numpy(), pred["pi_lower"].to_numpy(),
-                  pred["pi_upper"].to_numpy(), pred.index)
+    return pred["mean"].to_numpy(), pred["pi_lower"].to_numpy(), pred["pi_upper"].to_numpy(), pred.index
+
+
+def holt_winters(train, horizon):
+    mean, lower, upper, index = _ets_forecast(fit_holt_winters(train), len(train), horizon)
+    return _frame(mean, lower, upper, index)
+
+
+def holt_winters_log(train, horizon):
+    """
+    holt-winters fitted to log co2, forecasts mapped back with exp.
+
+    growth that is steady in percentage terms is linear on the log scale, and
+    the intervals come back lopsided - wider above than below - which is the
+    side every backtest miss fell on.
+    """
+    mean, lower, upper, _ = _ets_forecast(fit_holt_winters(np.log(train)), len(train), horizon)
+    index = pd.date_range(train.index[-1], periods=horizon + 1, freq=train.index.freq)[1:]
+    return _frame(np.exp(mean), np.exp(lower), np.exp(upper), index)
 
 
 MODELS = {
@@ -85,4 +100,11 @@ def diagnostics(fit, skip=SEASON + 1, lags=24):
 FITTERS = {
     "sarima": fit_sarima,
     "holt_winters": fit_holt_winters,
+}
+
+
+#candidate improvements, kept out of MODELS so the main results stay as reported.
+#src.experiments puts them through the same backtest
+CANDIDATES = {
+    "holt_winters_log": holt_winters_log,
 }
