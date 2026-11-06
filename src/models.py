@@ -38,7 +38,7 @@ def sarima(train, horizon):
                   pred["mean_ci_upper"].to_numpy(), pred.index)
 
 
-def fit_holt_winters(train, seasonal="add"):
+def fit_holt_winters(train, seasonal="add", damped=False):
     """
     holt-winters with additive trend and seasonality.
 
@@ -47,8 +47,8 @@ def fit_holt_winters(train, seasonal="add"):
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        return ETSModel(train, error="add", trend="add", seasonal=seasonal,
-                        seasonal_periods=SEASON).fit(disp=False)
+        return ETSModel(train, error="add", trend="add", damped_trend=damped,
+                        seasonal=seasonal, seasonal_periods=SEASON).fit(disp=False)
 
 
 def _ets_forecast(fit, n, horizon):
@@ -103,8 +103,16 @@ FITTERS = {
 }
 
 
+def holt_winters_damped(train, horizon):
+    """holt-winters whose trend flattens out over the horizon - often safer long range."""
+    mean, lower, upper, index = _ets_forecast(fit_holt_winters(train, damped=True),
+                                              len(train), horizon)
+    return _frame(mean, lower, upper, index)
+
+
 #candidate improvements, kept out of MODELS so the main results stay as reported.
 #src.experiments puts them through the same backtest
 CANDIDATES = {
     "holt_winters_log": holt_winters_log,
+    "holt_winters_damped": holt_winters_damped,
 }
